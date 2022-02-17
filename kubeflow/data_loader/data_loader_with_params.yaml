@@ -1,0 +1,82 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: import-table-
+spec:
+  entrypoint: update-table-by-season
+  arguments:
+    parameters:
+      - name: table
+        value: seasonal_data
+      - name: from
+        value: 1999
+      - name: to
+        value: 2021
+      - name: update
+        value: replace
+      - name: stat_type
+        value: None
+  templates:
+    - name: update-table-by-season
+      steps:
+        - - name: drop-table
+            when: "{{ workflow.parameters.update }} == replace"
+            template: data-loader
+            arguments:
+              parameters:
+                - name: table
+                  value: "{{ workflow.parameters.table }}"
+                - name: season
+                  value: 0
+                - name: update
+                  value: "{{ workflow.parameters.update }}"
+                - name: stat_type
+                  value: "{{ workflow.parameters.stat_type }}"
+        - - name: append-table-by-season
+            template: data-loader
+            arguments:
+              parameters:
+                - name: table
+                  value: "{{ workflow.parameters.table }}"
+                - name: season
+                  value: "{{ item }}"
+                - name: update
+                  value: append
+                - name: stat_type
+                  value: "{{ workflow.parameters.stat_type }}"
+            withSequence:
+              start: "{{ workflow.parameters.from }}"
+              end: "{{ workflow.parameters.to }}"
+    - name: data-loader
+      inputs:
+        parameters:
+        - name: table
+        - name: season
+        - name: update
+        - name: stat_type
+      container:
+        image: localhost:32000/data-loader:latest
+        command: [python]
+        args:
+          - -u
+          - data_loader.py
+          - "{{ inputs.parameters.table }}"
+          - "{{ inputs.parameters.season }}"
+          - "{{ inputs.parameters.update }}"
+          - "{{ inputs.parameters.stat_type }}"
+        resources:
+          limits:
+            memory: 3Gi
+            cpu: 1
+          requests:
+            memory: 2Gi
+            cpu: 500m
+        env:
+          - name: DB_SERVER
+            value: MSSQLTest
+          - name: DB_NAME
+            value: nfl_stats
+          - name: DB_USER
+            value: sa
+          - name: DB_PW
+            value: G33kw33k!

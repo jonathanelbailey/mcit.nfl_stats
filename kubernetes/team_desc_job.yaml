@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: team-desc
+spec:
+  template:
+    spec:
+      containers:
+        - name: nfl-data-import
+          image: localhost:32000/nfl_data_import:latest
+          command: ["python",  "data_loader.py", "team_desc", "replace"]
+      restartPolicy: Never
+  backoffLimit: 1

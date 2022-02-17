@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pbp-data
+spec:
+  completions: 23
+  parallelism: 1
+  completionMode: Indexed
+  template:
+    spec:
+      initContainers:
+        - name: index
+          image: localhost:32000/nfl_data_import:latest
+          command: ["python", "get_index.py"]
+          env:
+            - name: INPUT
+              value: /input/data.txt
+          volumeMounts:
+            - mountPath: /input
+              name: input
+      containers:
+        - name: nfl-data-import
+          image: localhost:32000/nfl_data_import:latest
+          command: ["python",  "data_loader.py", "pbp_data", "append"]
+          volumeMounts:
+            - mountPath: /input
+              name: input
+      restartPolicy: Never
+      volumes:
+        - name: input
+          emptyDir: {}
+  backoffLimit: 1

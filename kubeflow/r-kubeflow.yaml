@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: r-kubeflow-hello
+  templates:
+    - name: r-kubeflow-hello
+      steps:
+        - - name: generate
+            template: create-input
+        - - name: process
+            template: change-input
+            arguments:
+              parameters:
+              - name: message
+                value: "{{ steps.generate.outputs.result }}"
+        - - name: print
+            template: create-output
+            arguments:
+              parameters:
+              - name: new-message
+                value: "{{ steps.process.outputs.result }}"
+    - name: create-input
+      container:
+        image: localhost:32000/r-kubeflow:latest
+        command: [Rscript]
+        args:
+          - -e
+          - 'hello = commandArgs(trailingOnly=TRUE); print(hello); save(hello, "/etc/scripts/helloworld.Rda")'
+          - "hello, world!!!"
+      outputs:
+        artifacts:
+          - name: hello-artifact
+            path: /etc/scripts/helloworld.Rda
+    - name: change-input
+      inputs:
+        parameters:
+        - name: message       # parameter declaration
+      container:
+        image: localhost:32000/r-kubeflow:latest
+        command: [Rscript]
+        args:
+          - -e
+          - 'hello = commandArgs(trailingOnly=TRUE); writeLines(gsub("hello", "goodbye", hello), sep=" ")'
+          - "{{ inputs.parameters.message }}"
+    - name: create-output
+      inputs:
+        parameters:
+        - name: new-message       # parameter declaration
+      container:
+        image: localhost:32000/r-kubeflow:latest
+        command: [Rscript]
+        args:
+          - -e
+          - 'hello = commandArgs(trailingOnly=TRUE); writeLines(hello, sep=" ")'
+          - "{{ inputs.parameters.new-message }}"
+      outputs:
+        artifacts:
+          - name: result
+            path: /etc/scripts/helloworld.Rda

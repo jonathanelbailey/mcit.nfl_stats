@@ -1,0 +1,80 @@
+acceptEula:
+  value: "y"
+  mlValue: 'y'
+edition:
+  value: Developer
+collation: SQL_Latin1_General_CP1_CI_AS
+lcid: 1033
+hadr: 0
+agent:
+  enabled: true
+# Override sapassword in templates/secret.yaml
+sapassword: ""
+existingSecret: ""
+existingSecretKey: sapassword
+image:
+  repository: localhost:32000/mssql-linux-ml
+  tag: latest
+  pullPolicy: IfNotPresent
+  ## It is possible to specify docker registry credentials
+  ## See https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+  # pullSecrets:
+  #    - name: regsecret
+
+## Use an alternate scheduler, e.g. "stork".
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+# schedulerName: "default-scheduler"
+
+service:
+  # If headless is set to TRUE then the service type is ignored
+  headless: false
+  type: LoadBalancer
+  port: 1433
+  nodePort:
+  annotations: {}
+  labels: {}
+  loadBalancerIP:
+deployment:
+  annotations: {}
+  labels: {}
+pod:
+  annotations: {}
+  labels: {}
+persistence:
+  enabled: true
+#  existingDataClaim: mssql-linux-data
+#  existingTransactionLogClaim: mssql-linux-translog
+#  existingBackupClaim: mssql-linux-backup
+#  existingMasterClaim: mssql-linux-master
+  storageClass: microk8s-hostpath
+  dataAccessMode: ReadWriteOnce
+  dataSize: 40Gi
+  transactionLogAccessMode: ReadWriteOnce
+  transactionLogSize: 10Gi
+  backupAccessMode: ReadWriteOnce
+  backupSize: 120Gi
+  masterAccessMode: ReadWriteOnce
+  masterSize: 10Gi
+livenessprobe:
+  initialDelaySeconds: 15
+  periodSeconds: 20
+readinessprobe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+resources:
+  limits:
+    cpu: 8
+    memory: 16Gi
+  requests:
+    cpu: 4
+    memory: 8Gi
+nodeSelector: {}
+  # kubernetes.io/hostname: minikube
+
+tolerations: []
+
+affinity: {}
+
+securityContext: {}
+  # runAsUser: 1000
